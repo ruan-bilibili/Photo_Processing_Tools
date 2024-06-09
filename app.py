@@ -103,7 +103,7 @@ def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
             save_params['quality'] = quality
             image.save(buffer, **save_params)
             current_size_kb = len(buffer.getvalue()) / 1024
-            quality -= 0.5
+            quality -= 5
             print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
         
         while current_size_kb < min_size_kb and quality < 95:
@@ -111,7 +111,7 @@ def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
             save_params['quality'] = quality
             image.save(buffer, **save_params)
             current_size_kb = len(buffer.getvalue()) / 1024
-            quality += 0.5
+            quality += 5
             print(f"Increased image quality to {quality}, new size: {current_size_kb:.2f} KB")
 
         if min_size_kb <= current_size_kb <= max_size_kb:
@@ -195,7 +195,6 @@ if uploaded_file is not None:
             """)
         else:
             st.write(f"生成的文件大小为：{final_size_kb:.2f} KB，不在预期范围内，请调整参数后重试。")
-
 
 
 
