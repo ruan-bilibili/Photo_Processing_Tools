@@ -104,7 +104,7 @@ def adjust_image(image, size=None, format=None, target_size_kb=None, dpi=None):
 def adjust_file_size(buffer, target_size_kb, save_params):
     # 计算当前图像文件大小
     current_size_kb = len(buffer.getvalue()) / 1024
-    quality = 85  # 初始压缩质量
+    quality = 99  # 初始压缩质量
 
     # 如果当前大小大于目标大小，循环调整质量直到文件大小符合要求
     while current_size_kb > target_size_kb and quality > 10:
@@ -114,7 +114,7 @@ def adjust_file_size(buffer, target_size_kb, save_params):
         save_params['quality'] = quality
         image.save(buffer, **save_params)
         current_size_kb = len(buffer.getvalue()) / 1024
-        quality -= 5
+        quality -= 1
         print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
 
     buffer.seek(0)
