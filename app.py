@@ -64,7 +64,7 @@ def change_background(image, mask, color):
 
     return masked_image
 
-def adjust_image(image, size=None, format=None, target_size_kb=None, dpi=None):
+def adjust_image(image, size=None, format=None, min_size_kb=None, max_size_kb=None, dpi=None):
     if size:
         image = image.resize(size, Image.LANCZOS)
     
@@ -82,13 +82,13 @@ def adjust_image(image, size=None, format=None, target_size_kb=None, dpi=None):
     buffer = BytesIO()
     image.save(buffer, **save_params)
     
-    if target_size_kb:
-        buffer = adjust_file_size(buffer, target_size_kb, save_params)
+    if min_size_kb and max_size_kb:
+        buffer = adjust_file_size(buffer, min_size_kb, max_size_kb, save_params)
     
     buffer.seek(0)
     return buffer
 
-def adjust_file_size(buffer, target_size_kb, save_params):
+def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
     buffer.seek(0)
     image = Image.open(buffer)
     current_size_kb = len(buffer.getvalue()) / 1024
@@ -98,15 +98,23 @@ def adjust_file_size(buffer, target_size_kb, save_params):
 
     for mode in color_modes:
         image = image.convert(mode)
-        while current_size_kb > target_size_kb and quality > 10:
+        while current_size_kb > max_size_kb and quality > 10:
             buffer = BytesIO()
             save_params['quality'] = quality
             image.save(buffer, **save_params)
             current_size_kb = len(buffer.getvalue()) / 1024
             quality -= 5
             print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
+        
+        while current_size_kb < min_size_kb and quality < 95:
+            buffer = BytesIO()
+            save_params['quality'] = quality
+            image.save(buffer, **save_params)
+            current_size_kb = len(buffer.getvalue()) / 1024
+            quality += 5
+            print(f"Increased image quality to {quality}, new size: {current_size_kb:.2f} KB")
 
-        if current_size_kb <= target_size_kb:
+        if min_size_kb <= current_size_kb <= max_size_kb:
             break
 
     buffer.seek(0)
@@ -170,13 +178,10 @@ if uploaded_file is not None:
         estimated_size = estimate_file_size(image, size=new_size, format=format, dpi=dpi)
         st.write(f"预估的文件大小约为：{estimated_size:.2f} KB")
         
-        target_size_kb = (min_size_kb + max_size_kb) / 2
-        buffer = adjust_image(image, size=new_size, format=format, target_size_kb=target_size_kb, dpi=dpi)
+        buffer = adjust_image(image, size=new_size, format=format, min_size_kb=min_size_kb, max_size_kb=max_size_kb, dpi=dpi)
         final_size_kb = len(buffer.getvalue()) / 1024
 
-        if final_size_kb < min_size_kb or final_size_kb > max_size_kb:
-            st.write(f"生成的文件大小为：{final_size_kb:.2f} KB，不在预期范围内，请调整参数后重试。")
-        else:
+        if min_size_kb <= final_size_kb <= max_size_kb:
             st.write("### 处理后的证件照")
             st.image(buffer, caption='处理后的证件照', use_column_width=True)
             
@@ -188,8 +193,8 @@ if uploaded_file is not None:
             st.write("""
             谢谢你使用我的作品！如果觉得好用的话，看在UP这么无私奉献的份上，可否支持下UP呢？我会更加努力做出更好更实用的作品的！
             """)
-
-
+        else:
+            st.write(f"生成的文件大小为：{final_size_kb:.2f} KB，不在预期范围内，请调整参数后重试。")
 
 
 
