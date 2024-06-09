@@ -91,34 +91,31 @@ def adjust_image(image, size=None, format=None, min_size_kb=None, max_size_kb=No
 def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
     buffer.seek(0)
     image = Image.open(buffer)
-    current_size_kb = len(buffer.getvalue()) / 1024
+    
+    # 初始压缩质量
+    low_quality = 10
+    high_quality = 95
 
-    quality = 95
-    color_modes = ["RGB", "P", "L"]
-
-    for mode in color_modes:
-        image = image.convert(mode)
-        while current_size_kb > max_size_kb and quality > 10:
-            buffer = BytesIO()
-            save_params['quality'] = quality
-            image.save(buffer, **save_params)
-            current_size_kb = len(buffer.getvalue()) / 1024
-            quality -= 5
-            print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
+    # 二分搜索压缩质量
+    while low_quality <= high_quality:
+        mid_quality = (low_quality + high_quality) // 2
+        buffer = BytesIO()
+        save_params['quality'] = mid_quality
+        image.save(buffer, **save_params)
+        current_size_kb = len(buffer.getvalue()) / 1024
         
-        while current_size_kb < min_size_kb and quality < 95:
-            buffer = BytesIO()
-            save_params['quality'] = quality
-            image.save(buffer, **save_params)
-            current_size_kb = len(buffer.getvalue()) / 1024
-            quality += 5
-            print(f"Increased image quality to {quality}, new size: {current_size_kb:.2f} KB")
+        print(f"Adjusted image quality to {mid_quality}, new size: {current_size_kb:.2f} KB")
 
         if min_size_kb <= current_size_kb <= max_size_kb:
             break
+        elif current_size_kb < min_size_kb:
+            low_quality = mid_quality + 1
+        else:
+            high_quality = mid_quality - 1
 
     buffer.seek(0)
     return buffer
+
 
 def estimate_file_size(image, size=None, format='JPEG', dpi=300):
     buffer = BytesIO()
