@@ -103,7 +103,7 @@ def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
             save_params['quality'] = quality
             image.save(buffer, **save_params)
             current_size_kb = len(buffer.getvalue()) / 1024
-            quality -= 5
+            quality -= 0.5
             print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
         
         while current_size_kb < min_size_kb and quality < 95:
@@ -111,7 +111,7 @@ def adjust_file_size(buffer, min_size_kb, max_size_kb, save_params):
             save_params['quality'] = quality
             image.save(buffer, **save_params)
             current_size_kb = len(buffer.getvalue()) / 1024
-            quality += 5
+            quality += 0.5
             print(f"Increased image quality to {quality}, new size: {current_size_kb:.2f} KB")
 
         if min_size_kb <= current_size_kb <= max_size_kb:
