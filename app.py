@@ -101,24 +101,36 @@ def adjust_image(image, size=None, format=None, target_size_kb=None, dpi=None):
     buffer.seek(0)
     return buffer
 
-def adjust_file_size(buffer, target_size_kb, save_params):
-    # 计算当前图像文件大小
-    current_size_kb = len(buffer.getvalue()) / 1024
-    quality = 10  # 初始压缩质量
 
-    # 如果当前大小大于目标大小，循环调整质量直到文件大小符合要求
-    while current_size_kb > target_size_kb and quality > 10:
-        buffer.seek(0)
-        image = Image.open(buffer)
-        buffer = BytesIO()
-        save_params['quality'] = quality
-        image.save(buffer, **save_params)
-        current_size_kb = len(buffer.getvalue()) / 1024
-        quality -= 1
-        print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
+
+def adjust_file_size(buffer, target_size_kb, save_params):
+    buffer.seek(0)
+    image = Image.open(buffer)
+    current_size_kb = len(buffer.getvalue()) / 1024
+
+    # 初始压缩质量
+    quality = 95
+    # 颜色模式转换优先顺序
+    color_modes = ["RGB", "P", "L"]
+
+    # 循环尝试不同的压缩质量和颜色模式，直到文件大小符合要求
+    for mode in color_modes:
+        image = image.convert(mode)  # 转换颜色模式
+        while current_size_kb > target_size_kb and quality > 10:
+            buffer = BytesIO()
+            save_params['quality'] = quality
+            image.save(buffer, **save_params)
+            current_size_kb = len(buffer.getvalue()) / 1024
+            quality -= 5
+            print(f"Adjusted image quality to {quality}, new size: {current_size_kb:.2f} KB")
+
+        # 如果在当前颜色模式下已经符合要求，直接返回
+        if current_size_kb <= target_size_kb:
+            break
 
     buffer.seek(0)
     return buffer
+
 
 def estimate_file_size(image, size=None, format='JPEG', dpi=300):
     buffer = BytesIO()
